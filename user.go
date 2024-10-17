@@ -8,18 +8,36 @@ type User struct {
 	userId int
 	wsConn *websocket.Conn
 }
+type userManager struct {
+	usermap map[int]*User
+}
 
-func newUser(c *websocket.Conn) User {
+var UM userManager
+
+func newUM() userManager {
+	return userManager{
+		usermap: make(map[int]*User),
+	}
+}
+func (um *userManager) newUser(c *websocket.Conn) User {
 	var uid = globaluserindex
 	globaluserindex++
-	return User{
+	rt := User{
 		userId: uid,
 		wsConn: c,
 	}
+	um.usermap[uid] = &rt
+	return rt
 }
-func (u *User) login() {
-	agent.Enter(0, u.userId)
+func (um *userManager) getUser(uid int) *User {
+	return um.usermap[uid]
+}
+func (u *User) login(rid int) {
+	RM.Enter(u.userId, rid)
 }
 func (u *User) quit() {
-	agent.Quit(u.userId)
+	RM.QuitAnywhere(u.userId)
+}
+func (u *User) Send(msg []byte) {
+	RM.SendByUser(u.userId, msg)
 }
